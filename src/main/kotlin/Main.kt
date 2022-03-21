@@ -15,8 +15,8 @@ fun main(args: Array<String>) {
     val bufferedImage = ImageIO.read(FileInputStream(args.first()))
 
     val hsbs = measureTimedValue {
-        (0 until bufferedImage.width step 20).flatMap { x ->
-            (0 until bufferedImage.height step 20).map { y ->
+        (0 until bufferedImage.width step 10).flatMap { x ->
+            (0 until bufferedImage.height step 10).map { y ->
                 val rgb = bufferedImage.getRGB(x, y)
                 val color = Color(rgb)
                 val hsb = Color.RGBtoHSB(color.red, color.green, color.blue, null)
@@ -62,7 +62,6 @@ fun hartiganWong(
             val iterator = ci.value.iterator()
             while (iterator.hasNext()) {
                 val xi = iterator.next()
-                //val ci = clusters.filter { it.value.contains(xi) }.entries.first()
                 var maxImprovement: IndexedValue<Float>? = null
                 for (cj in clusters) {
                     if (cj.key != ci.key) {
@@ -77,11 +76,19 @@ fun hartiganWong(
                     }
                 }
                 if (maxImprovement != null) {
+                    centroids[ci.key]?.let {
+                        if (ci.value.size > 1) {
+                            removePointFromCentroid(it, xi, ci.value.size)
+                        } else {
+                            centroids[ci.key] = null
+                        }
+                    }
                     iterator.remove()
                     val ct = clusters[maxImprovement.index]!!
+                    centroids[maxImprovement.index]?.let {
+                        addPointToCentroid(it, xi, ct.size)
+                    }
                     ct.add(xi)
-                    centroids[ci.key] = if (ci.value.isNotEmpty()) centroid(ci.value) else null
-                    centroids[maxImprovement.index] = centroid(ct)
                     converging = true
                 }
             }
@@ -113,7 +120,7 @@ fun centroid(points: Collection<Point>): Point {
         throw IllegalArgumentException("Can't calculate centroid of empty set")
     }
     val centroid = points.first().copyOf()
-    points.forEach { point ->
+    points.drop(1).forEach { point ->
         for (d in centroid.indices) {
             centroid[d] += point[d]
         }
@@ -122,4 +129,20 @@ fun centroid(points: Collection<Point>): Point {
         centroid[d] /= points.size.toFloat()
     }
     return centroid
+}
+
+
+fun addPointToCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
+    for (d in centroid.indices) {
+        centroid[d] = (centroid[d] * previousClusterSize + point[d]) / (previousClusterSize + 1)
+    }
+}
+
+fun removePointFromCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
+    if (previousClusterSize == 1) {
+        throw IllegalArgumentException("Can't calculate centroid of empty set")
+    }
+    for (d in centroid.indices) {
+        centroid[d] = (centroid[d] * previousClusterSize - point[d]) / (previousClusterSize - 1)
+    }
 }
