@@ -10,11 +10,13 @@ import kotlin.time.measureTimedValue
 fun main(args: Array<String>) {
     println("Hello World!")
 
+    val easyClusters = (0 until 30).map { floatArrayOf(it / 10 + it * 0.1f, it / 10 + it * 0.1f) }.toTypedArray()
+
     val bufferedImage = ImageIO.read(FileInputStream(args.first()))
 
     val hsbs = measureTimedValue {
-        (0 until bufferedImage.width step 50).flatMap { x ->
-            (0 until bufferedImage.height step 50).map { y ->
+        (0 until bufferedImage.width step 20).flatMap { x ->
+            (0 until bufferedImage.height step 20).map { y ->
                 val rgb = bufferedImage.getRGB(x, y)
                 val color = Color(rgb)
                 val hsb = Color.RGBtoHSB(color.red, color.green, color.blue, null)
@@ -24,11 +26,15 @@ fun main(args: Array<String>) {
     }
     println("Read pixels in ${hsbs.duration.inWholeMilliseconds} ms")
     val palette = measureTimedValue {
-        val sets = hartiganWong(k = 10, hsbs.value)
+        val sets = hartiganWong(k = 10, hsbs.value.toTypedArray())
         sets.map {
-            val centroid = centroid(it)
-            val paletteColor = Color(Color.HSBtoRGB(centroid[0], centroid[1], centroid[2]))
-            paletteColor
+            if (it.isNotEmpty()) {
+                val centroid = centroid(it)
+                val paletteColor = Color(Color.HSBtoRGB(centroid[0], centroid[1], centroid[2]))
+                paletteColor
+            } else {
+                null
+            }
         }
     }
     println("It took ${palette.duration.inWholeMilliseconds} ms")
@@ -37,48 +43,61 @@ fun main(args: Array<String>) {
 
 typealias Point = FloatArray
 
-fun hartiganWong(k: Int = 4, points: List<Point>): Set<Set<Point>> {
-    val n = points.size
-    val x = points
-    val y = (points.indices).map { Random.nextInt(k) }.toIntArray()
-    val C: (Int) -> Set<Point> = {
-        points.filterIndexed { i, v ->
-            y[i] == it
-        }.toSet()
-    }
-    var wasUpdated = true
-    while (wasUpdated) {
-        wasUpdated = false
-        for (i in 0 until n) {
-            val Cyi = C(y[i])
-            val costImprovements = (0 until k)
-                .filter { it != y[i] }
-                .mapNotNull { j ->
-                    val Cj = C(j)
-                    if (Cj.isNotEmpty()) {
-                        val fi = costImprovement(x[i], Cyi, Cj)
-                        IndexedValue(j, fi)
-                    } else null
-
-                }
-            val maxCostImprovement = costImprovements.maxByOrNull { it.value }
-            if (maxCostImprovement != null && maxCostImprovement.value > 0f) {
-                y[i] = maxCostImprovement.index
-                wasUpdated = true
-            }
-        }
-    }
-    return points.withIndex().groupBy {
-        y[it.index]
-    }.map { it.value.map { it.value }.toSet() }.toSet()
+fun lloyd(k: Int, points: List<Point>): Collection<Collection<Point>> {
+    TODO()
 }
 
-fun costImprovement(x: Point, S: Set<Point>, T: Set<Point>): Float {
-    if (S == T) {
-        return 0f
-    }
-    return S.size * euclideanDistanceSquared(centroid(S), x) / (S.size + 1) -
-            T.size * euclideanDistanceSquared(centroid(T), x) / (T.size + 1)
+fun hartiganWong(
+    k: Int,
+    points: Array<Point>,
+    startingClusters: (k: Int, points: Array<Point>) -> Map<Int, List<Point>> = ::randomClusters
+): Collection<Collection<Point>> {
+    val clusters = startingClusters(k, points).mapValues { it.value.toMutableList() }
+    val centroids: MutableMap<Int, Point?> = clusters.mapValues {
+        centroid(it.value)
+    }.toMutableMap()
+    do {
+        var converging = false
+        for (ci in clusters) {
+            val iterator = ci.value.iterator()
+            while (iterator.hasNext()) {
+                val xi = iterator.next()
+                //val ci = clusters.filter { it.value.contains(xi) }.entries.first()
+                var maxImprovement: IndexedValue<Float>? = null
+                for (cj in clusters) {
+                    if (cj.key != ci.key) {
+                        val cti = centroids[ci.key]
+                        val ctj = centroids[cj.key]
+                        if (cti != null && ctj != null) {
+                            val fi = costImprovement(xi, cti, ci.value.size, ctj, cj.value.size)
+                            if (fi > (maxImprovement?.value ?: 0f)) {
+                                maxImprovement = IndexedValue(cj.key, fi)
+                            }
+                        }
+                    }
+                }
+                if (maxImprovement != null) {
+                    iterator.remove()
+                    val ct = clusters[maxImprovement.index]!!
+                    ct.add(xi)
+                    centroids[ci.key] = if (ci.value.isNotEmpty()) centroid(ci.value) else null
+                    centroids[maxImprovement.index] = centroid(ct)
+                    converging = true
+                }
+            }
+        }
+    } while (converging)
+    return clusters.map { it.value }
+}
+
+
+fun randomClusters(k: Int, points: Array<Point>): Map<Int, List<Point>> {
+    return points.groupBy { Random.nextInt(k) }
+}
+
+fun costImprovement(x: Point, centroidS: Point, sizeS: Int, centroidT: Point, sizeT: Int): Float {
+    return sizeS * euclideanDistanceSquared(centroidS, x) / (sizeS + 1) -
+            sizeT * euclideanDistanceSquared(centroidT, x) / (sizeT + 1)
 }
 
 fun euclideanDistanceSquared(x: Point, y: Point): Float {
@@ -89,7 +108,7 @@ fun euclideanDistanceSquared(x: Point, y: Point): Float {
     return total
 }
 
-fun centroid(points: Set<Point>): Point {
+fun centroid(points: Collection<Point>): Point {
     if (points.isEmpty()) {
         throw IllegalArgumentException("Can't calculate centroid of empty set")
     }
