@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
     }
     println("Read pixels in ${hsbs.duration.inWholeMilliseconds} ms")
     val palette = measureTimedValue {
-        val sets = hartiganWong(k = 10, hsbs.value.toTypedArray())
+        val sets = hartiganWong(k = 4, hsbs.value.toTypedArray())
         sets.map {
             if (it.isNotEmpty()) {
                 val centroid = centroid(it)
@@ -50,37 +50,39 @@ fun lloyd(k: Int, points: List<Point>): Collection<Collection<Point>> {
 fun hartiganWong(
     k: Int,
     points: Array<Point>,
-    startingClusters: (k: Int, points: Array<Point>) -> Map<Int, List<Point>> = ::randomClusters
+    selectClusters: (k: Int, points: Array<Point>) -> Collection<Collection<Point>> = ::randomClusters
 ): Collection<Collection<Point>> {
-    val clusters = startingClusters(k, points).mapValues { it.value.toMutableList() }
-    val centroids: MutableMap<Int, Point?> = clusters.mapValues {
-        centroid(it.value)
-    }.toMutableMap()
+    val clusters = selectClusters(k, points).map { it.toMutableList() }
+    val centroids: MutableList<Point?> = clusters.map {
+        centroid(it)
+    }.toMutableList()
     do {
         var converging = false
-        for (ci in clusters) {
-            val iterator = ci.value.iterator()
+        for (i in clusters.indices) {
+            val ci = clusters[i]
+            val iterator = ci.iterator()
             while (iterator.hasNext()) {
                 val xi = iterator.next()
                 var maxImprovement: IndexedValue<Float>? = null
-                for (cj in clusters) {
-                    if (cj.key != ci.key) {
-                        val cti = centroids[ci.key]
-                        val ctj = centroids[cj.key]
+                for (j in clusters.indices) {
+                    if (j != i) {
+                        val cj = clusters[j]
+                        val cti = centroids[i]
+                        val ctj = centroids[j]
                         if (cti != null && ctj != null) {
-                            val fi = costImprovement(xi, cti, ci.value.size, ctj, cj.value.size)
+                            val fi = costImprovement(xi, cti, ci.size, ctj, cj.size)
                             if (fi > (maxImprovement?.value ?: 0f)) {
-                                maxImprovement = IndexedValue(cj.key, fi)
+                                maxImprovement = IndexedValue(j, fi)
                             }
                         }
                     }
                 }
                 if (maxImprovement != null) {
-                    centroids[ci.key]?.let {
-                        if (ci.value.size > 1) {
-                            removePointFromCentroid(it, xi, ci.value.size)
+                    centroids[i]?.let {
+                        if (ci.size > 1) {
+                            removePointFromCentroid(it, xi, ci.size)
                         } else {
-                            centroids[ci.key] = null
+                            centroids[i] = null
                         }
                     }
                     iterator.remove()
@@ -94,12 +96,12 @@ fun hartiganWong(
             }
         }
     } while (converging)
-    return clusters.map { it.value }
+    return clusters.map { it }
 }
 
 
-fun randomClusters(k: Int, points: Array<Point>): Map<Int, List<Point>> {
-    return points.groupBy { Random.nextInt(k) }
+fun randomClusters(k: Int, points: Array<Point>): Collection<Collection<Point>> {
+    return points.groupBy { Random.nextInt(k) }.values
 }
 
 fun costImprovement(x: Point, centroidS: Point, sizeS: Int, centroidT: Point, sizeT: Int): Float {
