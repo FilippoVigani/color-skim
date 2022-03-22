@@ -55,53 +55,58 @@ fun hartiganWong(
 ): Collection<Collection<Point>> {
     val clusterIndex = selectClustersIndex(k, points)
     val clusterSize = Array(k) { 0 }
-    for (i in points.indices){
+    for (i in points.indices) {
         clusterSize[clusterIndex[i]]++
     }
     val centroids: Array<Point?> = computeCentroids(k, points, clusterIndex)
     var iterations = 0
+    var lastConvergedIndex: Int? = null
+    var p = 0
     do {
         iterations++
-        var converging = false
-        for (p in points.indices) {
-            val i = clusterIndex[p]
-            val currentClusterSize = clusterSize[i]
-            val x = points[p]
-            var maxImprovement: IndexedValue<Float>? = null
-            for (j in 0 until k) {
-                if (j != i) {
-                    val targetClusterSize = clusterSize[j]
-                    val cti = centroids[i]
-                    val ctj = centroids[j]
-                    if (cti != null && ctj != null) {
-                        val fi = costImprovement(x, cti, currentClusterSize, ctj, targetClusterSize)
-                        if (fi > (maxImprovement?.value ?: 0f)) {
-                            maxImprovement = IndexedValue(j, fi)
-                        }
+        val i = clusterIndex[p]
+        val currentClusterSize = clusterSize[i]
+        val x = points[p]
+        var maxImprovement: IndexedValue<Float>? = null
+        for (j in 0 until k) {
+            if (j != i) {
+                val targetClusterSize = clusterSize[j]
+                val cti = centroids[i]
+                val ctj = centroids[j]
+                if (cti != null && ctj != null) {
+                    val fi = costImprovement(x, cti, currentClusterSize, ctj, targetClusterSize)
+                    if (fi > (maxImprovement?.value ?: 0f)) {
+                        maxImprovement = IndexedValue(j, fi)
                     }
                 }
-            }
-            if (maxImprovement != null) {
-                centroids[i]?.let {
-                    if (currentClusterSize > 1) {
-                        removePointFromCentroid(it, x, currentClusterSize)
-                    } else {
-                        centroids[i] = null
-                    }
-                }
-                centroids[maxImprovement.index]?.let {
-                    addPointToCentroid(it, x, clusterSize[maxImprovement.index])
-                }
-                clusterIndex[p] = maxImprovement.index
-                clusterSize[i]--
-                clusterSize[maxImprovement.index]++
-                converging = true
             }
         }
-    } while (converging)
+        if (maxImprovement != null) {
+            centroids[i]?.let {
+                if (currentClusterSize > 1) {
+                    removePointFromCentroid(it, x, currentClusterSize)
+                } else {
+                    centroids[i] = null
+                }
+            }
+            centroids[maxImprovement.index]?.let {
+                addPointToCentroid(it, x, clusterSize[maxImprovement.index])
+            }
+            clusterIndex[p] = maxImprovement.index
+            clusterSize[i]--
+            clusterSize[maxImprovement.index]++
+
+            lastConvergedIndex = p
+        } else {
+            if (lastConvergedIndex != null && p == lastConvergedIndex) {
+                break
+            }
+        }
+        p = (p + 1) % points.size
+    } while (lastConvergedIndex != null && p != lastConvergedIndex)
     println("iterations=$iterations")
-    val clusters = List(k){ mutableListOf<Point>() }
-    for (p in points.indices){
+    val clusters = List(k) { mutableListOf<Point>() }
+    for (p in points.indices) {
         clusters[clusterIndex[p]].add(points[p])
     }
     return clusters
