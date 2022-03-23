@@ -2,7 +2,6 @@ import java.awt.Color
 import java.io.FileInputStream
 import javax.imageio.ImageIO
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
@@ -16,8 +15,8 @@ fun main(args: Array<String>) {
     val bufferedImage = ImageIO.read(FileInputStream(args.first()))
 
     val hsbs = measureTimedValue {
-        (0 until bufferedImage.width step 10).flatMap { x ->
-            (0 until bufferedImage.height step 10).map { y ->
+        (0 until bufferedImage.width step 5).flatMap { x ->
+            (0 until bufferedImage.height step 5).map { y ->
                 val rgb = bufferedImage.getRGB(x, y)
                 val color = Color(rgb)
                 val hsb = Color.RGBtoHSB(color.red, color.green, color.blue, null)
@@ -27,8 +26,8 @@ fun main(args: Array<String>) {
     }
     println("Read pixels in ${hsbs.duration.inWholeMilliseconds} ms")
     val palette = measureTimedValue {
-        val sets = hartiganWong(k = 10, hsbs.value.toTypedArray())
-        sets.map {
+        val clusters = hartiganWong(k = 10, hsbs.value.toTypedArray())
+        clusters.map {
             if (it.isNotEmpty()) {
                 val centroid = centroid(it)
                 val paletteColor = Color(Color.HSBtoRGB(centroid[0], centroid[1], centroid[2]))
@@ -53,65 +52,65 @@ fun hartiganWong(
     points: Array<Point>,
     selectClustersIndex: (k: Int, points: Array<Point>) -> Array<Int> = ::randomClusters
 ): Collection<Collection<Point>> {
-    val clusterIndex = selectClustersIndex(k, points)
-    val clusterSize = Array(k) { 0 }
-    for (i in points.indices) {
-        clusterSize[clusterIndex[i]]++
-    }
-    val centroids: Array<Point?> = computeCentroids(k, points, clusterIndex)
+    val clusterIndexes = selectClustersIndex(k, points)
+    val (clusterSizes, centroids) = computeClustersSizesAndCentroids(k, points, clusterIndexes)
     var iterations = 0
-    var lastConvergedIndex = -1
-    var p = 0
+    var lastConvergedPointIndex = -1
+    var pointIndex = 0
     do {
         iterations++
-        val i = clusterIndex[p]
-        val currentClusterSize = clusterSize[i]
-        val x = points[p]
+        val clusterIndex = clusterIndexes[pointIndex]
+        val currentClusterSize = clusterSizes[clusterIndex]
+        val point = points[pointIndex]
         var maxImprovement: IndexedValue<Float>? = null
-        for (j in 0 until k) {
-            if (j != i) {
-                val targetClusterSize = clusterSize[j]
-                val cti = centroids[i]
-                val ctj = centroids[j]
-                if (cti != null && ctj != null) {
-                    val fi = costImprovement(x, cti, currentClusterSize, ctj, targetClusterSize)
-                    if (fi > (maxImprovement?.value ?: 0f)) {
-                        maxImprovement = IndexedValue(j, fi)
+        for (targetClusterIndex in 0 until k) {
+            if (targetClusterIndex != clusterIndex) {
+                val sourceCentroid = centroids[clusterIndex]
+                val targetCentroid = centroids[targetClusterIndex]
+                if (sourceCentroid != null && targetCentroid != null) {
+                    val improvement = costImprovement(point, sourceCentroid, currentClusterSize, targetCentroid, clusterSizes[targetClusterIndex])
+                    if (improvement > (maxImprovement?.value ?: 0f)) {
+                        maxImprovement = IndexedValue(targetClusterIndex, improvement)
                     }
                 }
             }
         }
-        if (maxImprovement != null) {
-            centroids[i]?.let {
+        val targetClusterIndex = maxImprovement?.index
+        if (targetClusterIndex != null) {
+            centroids[clusterIndex]?.let {
                 if (currentClusterSize > 1) {
-                    removePointFromCentroid(it, x, currentClusterSize)
+                    removePointFromCentroid(it, point, currentClusterSize)
                 } else {
-                    centroids[i] = null
+                    centroids[clusterIndex] = null
                 }
             }
-            centroids[maxImprovement.index]?.let {
-                addPointToCentroid(it, x, clusterSize[maxImprovement.index])
+            centroids[targetClusterIndex]?.let {
+                addPointToCentroid(it, point, clusterSizes[targetClusterIndex])
             }
-            clusterIndex[p] = maxImprovement.index
-            clusterSize[i]--
-            clusterSize[maxImprovement.index]++
+            clusterIndexes[pointIndex] = targetClusterIndex
+            clusterSizes[clusterIndex]--
+            clusterSizes[targetClusterIndex]++
 
-            lastConvergedIndex = p
+            lastConvergedPointIndex = pointIndex
         }
-        if (lastConvergedIndex == -1 && p == points.size - 1) {
-            lastConvergedIndex = 0
+        if (lastConvergedPointIndex == -1 && pointIndex == points.size - 1) {
+            lastConvergedPointIndex = 0
         }
-        p = (p + 1) % points.size
-    } while (p != lastConvergedIndex)
+        pointIndex = (pointIndex + 1) % points.size
+    } while (pointIndex != lastConvergedPointIndex)
     println("iterations=$iterations")
     val clusters = List(k) { mutableListOf<Point>() }
     for (p in points.indices) {
-        clusters[clusterIndex[p]].add(points[p])
+        clusters[clusterIndexes[p]].add(points[p])
     }
-    return clusters
+    return clusters.sortedByDescending { it.size }
 }
 
-fun computeCentroids(k: Int, points: Array<Point>, clusterIndexes: Array<Int>): Array<Point?> {
+fun computeClustersSizesAndCentroids(
+    k: Int,
+    points: Array<Point>,
+    clusterIndexes: Array<Int>
+): Pair<Array<Int>, Array<Point?>> {
     val centroids = Array<Point?>(k) { Point(points.first().size) }
     val clusterSizes = Array(k) { 0 }
     for (i in points.indices) {
@@ -132,17 +131,19 @@ fun computeCentroids(k: Int, points: Array<Point>, clusterIndexes: Array<Int>): 
             }
         }
     }
-    return centroids
+    return clusterSizes to centroids
 }
 
 
 fun randomClusters(k: Int, points: Array<Point>): Array<Int> {
-    return Array(points.size) { Random.nextInt(k) }
+    //Use a fixed seed so that it's easier to compare iterations count with the same input data
+    val random = Random(0)
+    return Array(points.size) { random.nextInt(k) }
 }
 
-fun costImprovement(x: Point, centroidS: Point, sizeS: Int, centroidT: Point, sizeT: Int): Float {
-    return sizeS * euclideanDistanceSquared(centroidS, x) / (sizeS + 1) -
-            sizeT * euclideanDistanceSquared(centroidT, x) / (sizeT + 1)
+fun costImprovement(point: Point, sourceCentroid: Point, sourceSize: Int, destinationCentroid: Point, destinationSize: Int): Float {
+    return sourceSize * euclideanDistanceSquared(sourceCentroid, point) / (sourceSize + 1) -
+            destinationSize * euclideanDistanceSquared(destinationCentroid, point) / (destinationSize + 1)
 }
 
 fun euclideanDistanceSquared(x: Point, y: Point): Float {
