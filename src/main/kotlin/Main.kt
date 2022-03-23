@@ -60,7 +60,7 @@ fun hartiganWong(
     }
     val centroids: Array<Point?> = computeCentroids(k, points, clusterIndex)
     var iterations = 0
-    var lastConvergedIndex: Int? = null
+    var lastConvergedIndex = -1
     var p = 0
     do {
         iterations++
@@ -97,13 +97,12 @@ fun hartiganWong(
             clusterSize[maxImprovement.index]++
 
             lastConvergedIndex = p
-        } else {
-            if (lastConvergedIndex != null && p == lastConvergedIndex) {
-                break
-            }
+        }
+        if (lastConvergedIndex == -1 && p == points.size - 1) {
+            lastConvergedIndex = 0
         }
         p = (p + 1) % points.size
-    } while (lastConvergedIndex != null && p != lastConvergedIndex)
+    } while (p != lastConvergedIndex)
     println("iterations=$iterations")
     val clusters = List(k) { mutableListOf<Point>() }
     for (p in points.indices) {
