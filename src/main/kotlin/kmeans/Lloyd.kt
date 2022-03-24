@@ -51,7 +51,6 @@ fun lloyd(
                 }
             }
         } while (converging)
-        println("iterations=$iterations")
         val clusters = List(k) { mutableListOf<Point>() }
         for (p in points.indices) {
             clusters[clustersIndexes[p]].add(points[p])
