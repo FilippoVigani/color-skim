@@ -1,6 +1,7 @@
 import kmeans.centroid
 import kmeans.hartiganWong
 import kmeans.lloyd
+import kmeans.macQueen
 import java.awt.Color
 import java.io.FileInputStream
 import javax.imageio.ImageIO
@@ -29,11 +30,27 @@ fun main(args: Array<String>) {
     }
     println("Read pixels in ${hsbs.duration.inWholeMilliseconds} ms")
     runLloyd(4, hsbs.value)
+    runMacQueen(4, hsbs.value)
     runHartiganWong(4, hsbs.value)
 }
 
 fun runLloyd(k: Int, hsbs: Array<FloatArray>) {
     val clusters = lloyd(k = k, hsbs)
+    val palette = clusters.map {
+        if (it.isNotEmpty()) {
+            val centroid = centroid(it)
+            val paletteColor = Color(Color.HSBtoRGB(centroid[0], centroid[1], centroid[2]))
+            paletteColor
+        } else {
+            null
+        }
+    }
+    println(palette)
+}
+
+
+fun runMacQueen(k: Int, hsbs: Array<FloatArray>) {
+    val clusters = macQueen(k = k, hsbs)
     val palette = clusters.map {
         if (it.isNotEmpty()) {
             val centroid = centroid(it)

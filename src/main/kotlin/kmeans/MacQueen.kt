@@ -1,30 +1,28 @@
 package kmeans
 
-import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
 @OptIn(ExperimentalTime::class)
-fun lloyd(
+fun macQueen(
     k: Int,
     points: Array<Point>,
     selectIndexes: (k: Int, points: Array<Point>) -> Array<Int> = ::randomPointsIndexes
 ): Collection<Collection<Point>> {
-    println("Running Lloyd on ${points.size} points with $k clusters")
+    println("Running MacQueen on ${points.size} points with $k clusters")
     var iterations = 0
     val timedValue = measureTimedValue {
         val startingCentroidsIndexes = selectIndexes(k, points)
         val centroids = Array(k) { points[startingCentroidsIndexes[it]].copyOf() }
-        val clustersIndexes = Array(points.size) { -1 }
-        val clustersSizes = Array(k) { 0 }
+        val clustersIndexes = Array(points.size) { startingCentroidsIndexes.indexOf(it) }
+        val clustersSizes = Array(k) { 1 }
         var converging: Boolean
-        val nextCentroids = Array(k) { FloatArray(centroids.first().size) }
         do {
             iterations++
             converging = false
             for (pointIndex in points.indices) {
-                val clusterIndex = clustersIndexes[pointIndex]
                 var minDistance: IndexedValue<Float>? = null
+                val clusterIndex = clustersIndexes[pointIndex]
                 for (targetClusterIndex in 0 until k) {
                     val distance = euclideanDistanceSquared(points[pointIndex], centroids[targetClusterIndex])
                     if (minDistance == null || distance < minDistance.value) {
@@ -32,24 +30,23 @@ fun lloyd(
                     }
                 }
                 val targetClusterIndex = minDistance?.index
-                if (targetClusterIndex != null) {
-                    if (targetClusterIndex != clusterIndex) {
-                        if (clusterIndex != -1) {
-                            clustersSizes[clusterIndex]--
-                        }
-                        clustersIndexes[pointIndex] = targetClusterIndex
-                        clustersSizes[targetClusterIndex]++
-                        converging = true
+                if (targetClusterIndex != null && targetClusterIndex != clusterIndex) {
+                    if (clusterIndex != -1) {
+                        removePointFromCentroid(
+                            centroid = centroids[clusterIndex],
+                            point = points[pointIndex],
+                            previousClusterSize = clustersSizes[clusterIndex]
+                        )
+                        clustersSizes[clusterIndex]--
                     }
-                    for (d in nextCentroids[targetClusterIndex].indices) {
-                        nextCentroids[targetClusterIndex][d] += points[pointIndex][d]
-                    }
-                }
-            }
-            for (i in nextCentroids.indices) {
-                for (d in nextCentroids[i].indices) {
-                    centroids[i][d] = nextCentroids[i][d] / clustersSizes[i]
-                    nextCentroids[i][d] = 0f
+                    addPointToCentroid(
+                        centroid = centroids[targetClusterIndex],
+                        point = points[pointIndex],
+                        previousClusterSize = clustersSizes[targetClusterIndex]
+                    )
+                    clustersIndexes[pointIndex] = targetClusterIndex
+                    clustersSizes[targetClusterIndex]++
+                    converging = true
                 }
             }
         } while (converging)
