@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 typealias Point = FloatArray
 
-fun euclideanDistanceSquared(x: Point, y: Point): Float {
+internal fun euclideanDistanceSquared(x: Point, y: Point): Float {
     var total = 0f
     for (i in x.indices) {
         total += (x[i] - y[i]).pow(2)
@@ -13,7 +13,7 @@ fun euclideanDistanceSquared(x: Point, y: Point): Float {
     return total
 }
 
-fun centroid(points: Collection<Point>): Point {
+internal fun centroid(points: Collection<Point>): Point {
     if (points.isEmpty()) {
         throw IllegalArgumentException("Can't calculate centroid of empty set")
     }
@@ -30,13 +30,13 @@ fun centroid(points: Collection<Point>): Point {
 }
 
 
-fun addPointToCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
+internal fun addPointToCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
     for (d in centroid.indices) {
         centroid[d] = (centroid[d] * previousClusterSize + point[d]) / (previousClusterSize + 1)
     }
 }
 
-fun removePointFromCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
+internal fun removePointFromCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
     if (previousClusterSize == 1) {
         throw IllegalArgumentException("Can't calculate centroid of empty set")
     }
@@ -45,7 +45,7 @@ fun removePointFromCentroid(centroid: Point, point: Point, previousClusterSize: 
     }
 }
 
-fun randomPointsIndexes(k: Int, points: Array<Point>): Array<Int> {
+internal fun randomPointsIndexes(k: Int, points: Array<Point>): Array<Int> {
     val random = Random(0)
     //Use a fixed seed so that it's easier to compare iterations count with the same input data
     return Array(k) { random.nextInt(points.size) }

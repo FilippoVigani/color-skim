@@ -6,11 +6,11 @@ import kotlin.time.measureTimedValue
 
 
 @OptIn(ExperimentalTime::class)
-fun hartiganWong(
+internal fun hartiganWong(
     k: Int,
     points: Array<Point>,
     selectClustersIndexes: (k: Int, points: Array<Point>) -> Array<Int> = ::randomClusters
-): Collection<Collection<Point>> {
+): KMeansResult {
     println("Running Hartigan-Wong on ${points.size} points with $k clusters")
     var iterations = 0
     val timedValue = measureTimedValue {
@@ -68,7 +68,15 @@ fun hartiganWong(
         for (p in points.indices) {
             clusters[clustersIndexes[p]].add(points[p])
         }
-        clusters.sortedByDescending { it.size }
+        (0 until k).mapNotNull {
+            val centroid = centroids[it]
+            if (centroid != null) {
+                Cluster(
+                    centroid = centroid,
+                    points = clusters[it]
+                )
+            } else null
+        }.sortedByDescending { it.points.size }
     }
     println("Operation took ${timedValue.duration.inWholeMilliseconds} ms ($iterations iterations)")
     return timedValue.value

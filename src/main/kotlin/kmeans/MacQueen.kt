@@ -4,11 +4,11 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
 @OptIn(ExperimentalTime::class)
-fun macQueen(
+internal fun macQueen(
     k: Int,
     points: Array<Point>,
     selectIndexes: (k: Int, points: Array<Point>) -> Array<Int> = ::randomPointsIndexes
-): Collection<Collection<Point>> {
+): KMeansResult {
     println("Running MacQueen on ${points.size} points with $k clusters")
     var iterations = 0
     val timedValue = measureTimedValue {
@@ -54,7 +54,13 @@ fun macQueen(
         for (p in points.indices) {
             clusters[clustersIndexes[p]].add(points[p])
         }
-        clusters.sortedByDescending { it.size }
+        (0 until k).mapNotNull {
+            val centroid = centroids[it]
+            Cluster(
+                centroid = centroid,
+                points = clusters[it]
+            )
+        }.sortedByDescending { it.points.size }
     }
     println("Operation took ${timedValue.duration.inWholeMilliseconds} ms ($iterations iterations)")
     return timedValue.value

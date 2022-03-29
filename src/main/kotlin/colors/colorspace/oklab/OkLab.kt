@@ -8,37 +8,37 @@ class OkLab : ColorSpace(TYPE_Lab, 3) {
         val L = colorvalue[0]
         val a = colorvalue[1]
         val b = colorvalue[2]
-        val l_: Float = L + 0.3963377774f * a + 0.2158037573f * b
-        val m_: Float = L - 0.1055613458f * a - 0.0638541728f * b
-        val s_: Float = L - 0.0894841775f * a - 1.2914855480f * b
+        val l_ = L + 0.3963377774 * a + 0.2158037573 * b
+        val m_ = L - 0.1055613458 * a - 0.0638541728 * b
+        val s_ = L - 0.0894841775 * a - 1.2914855480 * b
 
         val l = l_.pow(3)
         val m = m_.pow(3)
         val s = s_.pow(3)
 
         return floatArrayOf(
-            f(+4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s),
-            f(-1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s),
-            f(-0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s)
+            f(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s).toFloat(),
+            f(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s).toFloat(),
+            f(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s).toFloat(),
         )
     }
 
     override fun fromRGB(rgbvalue: FloatArray): FloatArray {
-        val r = fInv(rgbvalue[0])
-        val g = fInv(rgbvalue[1])
-        val b = fInv(rgbvalue[2])
-        val l: Float = +0.4122214708f * r + 0.5363325363f * g + 0.0514459929f * b
-        val m: Float = +0.2119034982f * r + 0.6806995451f * g + 0.1073969566f * b
-        val s: Float = +0.0883024619f * r + 0.2817188376f * g + 0.6299787005f * b
+        val r = fInv(rgbvalue[0].toDouble())
+        val g = fInv(rgbvalue[1].toDouble())
+        val b = fInv(rgbvalue[2].toDouble())
+        val l = +0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+        val m = +0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+        val s = +0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
 
-        val l_: Float = l.pow(1f / 3)
-        val m_: Float = m.pow(1f / 3)
-        val s_: Float = s.pow(1f / 3)
+        val l_ = l.pow(1.0 / 3)
+        val m_ = m.pow(1.0 / 3)
+        val s_ = s.pow(1.0 / 3)
 
         return floatArrayOf(
-            +0.2104542553f * l_ + 0.7936177850f * m_ - 0.0040720468f * s_,
-            +1.9779984951f * l_ - 2.4285922050f * m_ + 0.4505937099f * s_,
-            +0.0259040371f * l_ + 0.7827717662f * m_ - 0.8086757660f * s_
+            (+0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_).toFloat(),
+            (+1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_).toFloat(),
+            (+0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_).toFloat()
         )
     }
 
@@ -82,18 +82,18 @@ class OkLab : ColorSpace(TYPE_Lab, 3) {
         )
     }
 
-    private fun f(x: Float): Float {
-        if (x >= 0.0031308f) {
-            return 1.055f * x.pow(1f / 2.4f) - 0.055f
+    private fun f(x: Double): Double {
+        if (x >= 0.0031308) {
+            return 1.055 * x.pow(1.0 / 2.4) - 0.055
         }
-        return x * 12.92f
+        return x * 12.92
     }
 
-    private fun fInv(x: Float): Float {
-        if (x >= 0.04045f) {
-            return ((x + 0.055f) / (1f + 0.055f)).pow(2.4f)
+    private fun fInv(x: Double): Double {
+        if (x >= 0.04045) {
+            return ((x + 0.055) / (1 + 0.055)).pow(2.4)
         }
-        return x / 12.92f
+        return x / 12.92
     }
 
     companion object {
