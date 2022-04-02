@@ -10,20 +10,18 @@ fun main(args: Array<String>) {
     println("Hello World!")
 
     args.forEach { imagePath ->
-        ColorSkim.Algorithm.values().forEach { algorithm ->
-            val palette = ColorSkim.computeSchemeFromImage(
-                inputStream = FileInputStream(imagePath),
-                colorType = Oklab::class,
-                paletteSize = 15,
-                resolution = 0.01f,
-                algorithm = algorithm
-            )
-            val paletteAwtColors = palette.map {
-                val rgb = it.color.convert<Srgb>()
-                java.awt.Color(rgb.r.toFloat(), rgb.g.toFloat(), rgb.b.toFloat())
-            }
-            println(palette)
+        val palette = ColorSkim.computeSchemeFromImage(
+            inputStream = FileInputStream(imagePath),
+            colorType = Oklab::class,
+            paletteSize = 8,
+            resolution = 0.2f,
+            algorithm = ColorSkim.Algorithm.HartiganWong
+        )
+        val paletteAwtColors = palette.map {
+            val rgb = it.color.convert<Srgb>()
+            java.awt.Color(rgb.r.toFloat(), rgb.g.toFloat(), rgb.b.toFloat())
         }
+        println(palette)
     }
 }
 

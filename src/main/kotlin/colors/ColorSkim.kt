@@ -10,6 +10,7 @@ import kmeans.lloyd
 import kmeans.macQueen
 import java.io.InputStream
 import javax.imageio.ImageIO
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
@@ -25,7 +26,7 @@ abstract class ColorSkim {
             inputStream: InputStream,
             colorType: KClass<out Color>,
             paletteSize: Int = 5,
-            resolution: Float = 0.3f,
+            resolution: Float = 0.2f,
             algorithm: Algorithm = Algorithm.HartiganWong
         ): List<PaletteColor> {
             val colors = readColors(inputStream, colorType, resolution)
@@ -50,8 +51,9 @@ abstract class ColorSkim {
             require(resolution > 0f && resolution <= 1f) {
                 "resolution must be between 0 and 1"
             }
+            val actualResolution = resolution.pow(2)
             val bufferedImage = ImageIO.read(inputStream)
-            val pixelCount = ((bufferedImage.width * bufferedImage.height) * resolution).roundToInt()
+            val pixelCount = ((bufferedImage.width * bufferedImage.height) * actualResolution).roundToInt()
             val colorArray = Array(pixelCount) { DoubleArray(3) }
             for (i in 0 until pixelCount) {
                 val index = ((i.toFloat() / pixelCount) * (bufferedImage.width * bufferedImage.height)).roundToInt()
