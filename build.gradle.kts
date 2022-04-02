@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation("dev.kdrag0n:colorkt:1.0.5")
     testImplementation(kotlin("test"))
 }
 

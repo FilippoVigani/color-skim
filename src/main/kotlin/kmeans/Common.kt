@@ -1,16 +1,18 @@
 package kmeans
 
 import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.random.Random
 
-typealias Point = FloatArray
+typealias Point = DoubleArray
+typealias PointDistance = Double
 
-internal fun euclideanDistanceSquared(x: Point, y: Point): Float {
-    var total = 0f
+internal fun euclideanDistanceSquared(x: Point, y: Point): PointDistance {
+    var total = 0.0
     for (i in x.indices) {
         total += (x[i] - y[i]).pow(2)
     }
-    return total
+    return sqrt(total)
 }
 
 internal fun centroid(points: Collection<Point>): Point {
@@ -24,7 +26,7 @@ internal fun centroid(points: Collection<Point>): Point {
         }
     }
     for (d in centroid.indices) {
-        centroid[d] /= points.size.toFloat()
+        centroid[d] = centroid[d] / points.size
     }
     return centroid
 }

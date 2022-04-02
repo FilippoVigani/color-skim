@@ -1,14 +1,17 @@
 package colors
 
-import colors.colorspace.oklab.OkLab
+import colors.colorspace.getComponents
+import colors.colorspace.toColor
+import dev.kdrag0n.colorkt.Color
+import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
+import dev.kdrag0n.colorkt.rgb.Srgb
 import kmeans.hartiganWong
 import kmeans.lloyd
 import kmeans.macQueen
-import java.awt.Color
-import java.awt.color.ColorSpace
 import java.io.InputStream
 import javax.imageio.ImageIO
 import kotlin.math.roundToInt
+import kotlin.reflect.KClass
 
 abstract class ColorSkim {
     enum class Algorithm {
@@ -20,12 +23,12 @@ abstract class ColorSkim {
     companion object {
         fun computeSchemeFromImage(
             inputStream: InputStream,
-            colorSpace: ColorSpace = OkLab.instance,
+            colorType: KClass<out Color>,
             paletteSize: Int = 5,
             resolution: Float = 0.3f,
             algorithm: Algorithm = Algorithm.HartiganWong
         ): List<PaletteColor> {
-            val colors = readColors(inputStream, colorSpace, resolution)
+            val colors = readColors(inputStream, colorType, resolution)
             val clusters = when (algorithm) {
                 Algorithm.LLoyd -> lloyd(k = paletteSize, points = colors)
                 Algorithm.MacQueen -> macQueen(k = paletteSize, points = colors)
@@ -34,33 +37,30 @@ abstract class ColorSkim {
             val totalPoints = clusters.sumOf { it.points.size }
             return clusters
                 .map {
-                    val color = Color(ColorSpace.getInstance(ColorSpace.CS_sRGB), colorSpace.toRGB(it.centroid), 1f)
-                    PaletteColor(color, it.points.size.toFloat() / totalPoints.toFloat())
+                    val color = it.centroid.toColor(colorType)
+                    PaletteColor(color, it.points.size.toDouble() / totalPoints)
                 }
         }
 
         internal fun readColors(
             inputStream: InputStream,
-            colorSpace: ColorSpace,
+            colorType: KClass<out Color>,
             resolution: Float,
-        ): Array<FloatArray> {
+        ): Array<DoubleArray> {
             require(resolution > 0f && resolution <= 1f) {
                 "resolution must be between 0 and 1"
             }
             val bufferedImage = ImageIO.read(inputStream)
             val pixelCount = ((bufferedImage.width * bufferedImage.height) * resolution).roundToInt()
-            val colorArray = Array(pixelCount) { FloatArray(colorSpace.numComponents) }
+            val colorArray = Array(pixelCount) { DoubleArray(3) }
             for (i in 0 until pixelCount) {
                 val index = ((i.toFloat() / pixelCount) * (bufferedImage.width * bufferedImage.height)).roundToInt()
                 val x = (index) % bufferedImage.width
                 val y = (index) / bufferedImage.width
                 val rgb = bufferedImage.getRGB(x, y)
-                val rgbF = floatArrayOf(
-                    (rgb shr 16 and 0xFF) / 255f,
-                    (rgb shr 8 and 0xFF) / 255f,
-                    (rgb shr 0 and 0xFF) / 255f
-                )
-                colorArray[i] = colorSpace.fromRGB(rgbF)
+                val srgb = Srgb(rgb)
+                val color = convert(srgb, colorType)
+                colorArray[i] = color!!.getComponents()
             }
             return colorArray
         }

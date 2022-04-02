@@ -1,32 +1,27 @@
 import colors.ColorSkim
-import colors.colorspace.cielab.CIELab
-import colors.colorspace.oklab.OkLab
-import kmeans.centroid
-import kmeans.hartiganWong
-import kmeans.lloyd
-import kmeans.macQueen
-import java.awt.Color
-import java.awt.color.ColorSpace
+import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
+import dev.kdrag0n.colorkt.rgb.Srgb
+import dev.kdrag0n.colorkt.ucs.lab.Oklab
 import java.io.FileInputStream
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 @OptIn(ExperimentalTime::class)
 fun main(args: Array<String>) {
     println("Hello World!")
 
-    val cieLab = CIELab.instance
-    val okLab = OkLab.instance
-
     args.forEach { imagePath ->
         ColorSkim.Algorithm.values().forEach { algorithm ->
             val palette = ColorSkim.computeSchemeFromImage(
                 inputStream = FileInputStream(imagePath),
-                colorSpace = okLab,
-                paletteSize = 9,
-                resolution = 0.1f,
+                colorType = Oklab::class,
+                paletteSize = 15,
+                resolution = 0.01f,
                 algorithm = algorithm
             )
+            val paletteAwtColors = palette.map {
+                val rgb = it.color.convert<Srgb>()
+                java.awt.Color(rgb.r.toFloat(), rgb.g.toFloat(), rgb.b.toFloat())
+            }
             println(palette)
         }
     }

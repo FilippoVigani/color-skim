@@ -17,13 +17,13 @@ internal fun lloyd(
         val clustersIndexes = Array(points.size) { -1 }
         val clustersSizes = Array(k) { 0 }
         var converging: Boolean
-        val nextCentroids = Array(k) { FloatArray(centroids.first().size) }
+        val nextCentroids = Array(k) { Point(centroids.first().size) }
         do {
             iterations++
             converging = false
             for (pointIndex in points.indices) {
                 val clusterIndex = clustersIndexes[pointIndex]
-                var minDistance: IndexedValue<Float>? = null
+                var minDistance: IndexedValue<PointDistance>? = null
                 for (targetClusterIndex in 0 until k) {
                     val distance = euclideanDistanceSquared(points[pointIndex], centroids[targetClusterIndex])
                     if (minDistance == null || distance < minDistance.value) {
@@ -48,7 +48,7 @@ internal fun lloyd(
             for (i in nextCentroids.indices) {
                 for (d in nextCentroids[i].indices) {
                     centroids[i][d] = nextCentroids[i][d] / clustersSizes[i]
-                    nextCentroids[i][d] = 0f
+                    nextCentroids[i][d] = 0.0
                 }
             }
         } while (converging)

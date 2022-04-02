@@ -25,7 +25,7 @@ internal fun hartiganWong(
             val clusterIndex = clustersIndexes[pointIndex]
             val currentClusterSize = clustersSizes[clusterIndex]
             val point = points[pointIndex]
-            var maxImprovement: IndexedValue<Float>? = null
+            var maxImprovement: IndexedValue<PointDistance>? = null
             for (targetClusterIndex in 0 until k) {
                 if (targetClusterIndex != clusterIndex) {
                     val sourceCentroid = centroids[clusterIndex]
@@ -38,7 +38,7 @@ internal fun hartiganWong(
                             targetCentroid,
                             clustersSizes[targetClusterIndex]
                         )
-                        if (improvement > (maxImprovement?.value ?: 0f)) {
+                        if (improvement > (maxImprovement?.value ?: 0.0)) {
                             maxImprovement = IndexedValue(targetClusterIndex, improvement)
                         }
                     }
@@ -123,7 +123,7 @@ fun costImprovement(
     sourceSize: Int,
     destinationCentroid: Point,
     destinationSize: Int
-): Float {
+): PointDistance {
     return sourceSize * euclideanDistanceSquared(sourceCentroid, point) / (sourceSize + 1) -
             destinationSize * euclideanDistanceSquared(destinationCentroid, point) / (destinationSize + 1)
 }

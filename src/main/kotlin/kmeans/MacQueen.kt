@@ -21,7 +21,7 @@ internal fun macQueen(
             iterations++
             converging = false
             for (pointIndex in points.indices) {
-                var minDistance: IndexedValue<Float>? = null
+                var minDistance: IndexedValue<PointDistance>? = null
                 val clusterIndex = clustersIndexes[pointIndex]
                 for (targetClusterIndex in 0 until k) {
                     val distance = euclideanDistanceSquared(points[pointIndex], centroids[targetClusterIndex])
