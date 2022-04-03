@@ -47,6 +47,8 @@ internal fun removePointFromCentroid(centroid: Point, point: Point, previousClus
     }
 }
 
+typealias InitialPointsSelector = (k: Int, points: Array<Point>) -> Array<Int>
+
 internal fun randomPointsIndexes(k: Int, points: Array<Point>): Array<Int> {
     val random = Random(0)
     //Use a fixed seed so that it's easier to compare iterations count with the same input data

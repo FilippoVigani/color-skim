@@ -1,5 +1,6 @@
 package kmeans
 
+import kmeans.initialization.kmeansPlusPlus
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -7,7 +8,7 @@ import kotlin.time.measureTimedValue
 internal fun macQueen(
     k: Int,
     points: Array<Point>,
-    selectIndexes: (k: Int, points: Array<Point>) -> Array<Int> = ::randomPointsIndexes
+    selectIndexes: InitialPointsSelector = ::kmeansPlusPlus
 ): KMeansResult {
     println("Running MacQueen on ${points.size} points with $k clusters")
     var iterations = 0

@@ -5,7 +5,9 @@ import colors.colorspace.toColor
 import dev.kdrag0n.colorkt.Color
 import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
 import dev.kdrag0n.colorkt.rgb.Srgb
+import kmeans.InitialPointsSelector
 import kmeans.hartiganWong
+import kmeans.initialization.kmeansPlusPlus
 import kmeans.lloyd
 import kmeans.macQueen
 import java.io.InputStream
@@ -15,10 +17,10 @@ import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 
 abstract class ColorSkim {
-    enum class Algorithm {
-        LLoyd,
-        MacQueen,
-        HartiganWong,
+    sealed class Algorithm {
+        data class LLoyd(val initialPointsSelector: InitialPointsSelector = ::kmeansPlusPlus) : Algorithm()
+        data class MacQueen(val initialPointsSelector: InitialPointsSelector = ::kmeansPlusPlus) : Algorithm()
+        object HartiganWong : Algorithm()
     }
 
     companion object {
@@ -31,8 +33,16 @@ abstract class ColorSkim {
         ): List<PaletteColor> {
             val colors = readColors(inputStream, colorType, resolution)
             val clusters = when (algorithm) {
-                Algorithm.LLoyd -> lloyd(k = paletteSize, points = colors)
-                Algorithm.MacQueen -> macQueen(k = paletteSize, points = colors)
+                is Algorithm.LLoyd -> lloyd(
+                    k = paletteSize,
+                    points = colors,
+                    selectIndexes = algorithm.initialPointsSelector
+                )
+                is Algorithm.MacQueen -> macQueen(
+                    k = paletteSize,
+                    points = colors,
+                    selectIndexes = algorithm.initialPointsSelector
+                )
                 Algorithm.HartiganWong -> hartiganWong(k = paletteSize, points = colors)
             }
             val totalPoints = clusters.sumOf { it.points.size }
