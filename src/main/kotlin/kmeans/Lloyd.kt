@@ -1,6 +1,7 @@
 package kmeans
 
 import kmeans.initialization.kmeansPlusPlus
+import kmeans.initialization.scalableKMeans
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -8,7 +9,7 @@ import kotlin.time.measureTimedValue
 internal fun lloyd(
     k: Int,
     points: Array<Point>,
-    selectIndexes: InitialPointsSelector = ::kmeansPlusPlus
+    selectIndexes: InitialPointsSelector
 ): KMeansResult {
     println("Running Lloyd on ${points.size} points with $k clusters")
     var iterations = 0

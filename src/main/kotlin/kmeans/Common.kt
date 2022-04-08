@@ -12,7 +12,7 @@ internal fun euclideanDistanceSquared(x: Point, y: Point): PointDistance {
     for (i in x.indices) {
         total += (x[i] - y[i]).pow(2)
     }
-    return sqrt(total)
+    return total
 }
 
 internal fun centroid(points: Collection<Point>): Point {

@@ -3,6 +3,7 @@ import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
 import dev.kdrag0n.colorkt.rgb.Srgb
 import dev.kdrag0n.colorkt.ucs.lab.Oklab
 import kmeans.initialization.kmeansPlusPlus
+import kmeans.initialization.scalableKMeans
 import kmeans.randomClusters
 import kmeans.randomPointsIndexes
 import java.io.FileInputStream
@@ -16,14 +17,16 @@ fun main(args: Array<String>) {
         val palette = ColorSkim.computeSchemeFromImage(
             inputStream = FileInputStream(imagePath),
             colorType = Oklab::class,
-            paletteSize = 4,
+            paletteSize = 8,
             resolution = 0.2f,
-            algorithm = ColorSkim.Algorithm.LLoyd(::randomPointsIndexes)
+            algorithm = ColorSkim.Algorithm.LLoyd(initialPointsSelector  = { k, points ->
+                scalableKMeans(k, points, 5f)
+            })
         )
         val palette2 = ColorSkim.computeSchemeFromImage(
             inputStream = FileInputStream(imagePath),
             colorType = Oklab::class,
-            paletteSize = 4,
+            paletteSize = 8,
             resolution = 0.2f,
             algorithm = ColorSkim.Algorithm.LLoyd(::kmeansPlusPlus)
         )
