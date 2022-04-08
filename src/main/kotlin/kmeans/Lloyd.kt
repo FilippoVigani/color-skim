@@ -1,7 +1,6 @@
 package kmeans
 
 import kmeans.initialization.kmeansPlusPlus
-import kmeans.initialization.scalableKMeans
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 

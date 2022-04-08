@@ -9,7 +9,7 @@ import kotlin.time.measureTimedValue
 internal fun hartiganWong(
     k: Int,
     points: Array<Point>,
-    selectClustersIndexes: (k: Int, points: Array<Point>) -> Array<Int> = ::randomClusters
+    selectClustersIndexes: (k: Int, points: Array<Point>) -> Array<Int>
 ): KMeansResult {
     println("Running Hartigan-Wong on ${points.size} points with $k clusters")
     var iterations = 0
@@ -111,9 +111,7 @@ fun computeClustersSizesAndCentroids(
 }
 
 
-fun randomClusters(k: Int, points: Array<Point>): Array<Int> {
-    //Use a fixed seed so that it's easier to compare iterations count with the same input data
-    val random = Random(0)
+fun randomClusters(k: Int, points: Array<Point>, random: Random = Random.Default): Array<Int> {
     return Array(points.size) { random.nextInt(k) }
 }
 

@@ -5,8 +5,7 @@ import kmeans.PointDistance
 import kmeans.euclideanDistanceSquared
 import kotlin.random.Random
 
-fun kmeansPlusPlus(k: Int, points: Array<Point>): Array<Int> {
-    val random = Random(0)
+fun kmeansPlusPlus(k: Int, points: Array<Point>, random: Random = Random.Default): Array<Int> {
     val centersIndexes = Array(k) { if (it == 0) random.nextInt(points.size) else -1 }
     for (c in 1 until k) {
         var cumulativeDistance = 0.0
