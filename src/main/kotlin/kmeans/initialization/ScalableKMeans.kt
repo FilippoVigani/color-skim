@@ -17,44 +17,47 @@ fun scalableKMeans(k: Int, points: Array<Point>, l: Float): Array<Int> {
         val distances = Array(points.size) { p ->
             var minDistance = PointDistance.POSITIVE_INFINITY
             for (i in centersIndexes.indices) {
-                if (centersIndexes[i] != -1) {
-                    val distance = euclideanDistanceSquared(points[centersIndexes[i]], points[p])
-                    if (distance <= minDistance) {
-                        minDistance = distance
-                    }
+                val distance = euclideanDistanceSquared(points[centersIndexes[i]], points[p])
+                if (distance <= minDistance) {
+                    minDistance = distance
                 }
             }
             cumulativeDistance += minDistance
             minDistance
         }
         for (p in points.indices) {
-            val sampleProbability = l * distances[p] / cumulativeDistance
+            val sampleProbability = l * distances[p] / currentCost
             if (random.nextDouble() < sampleProbability) {
                 centersIndexes.add(p)
             }
         }
         currentCost = cumulativeDistance
     }
-    val weights = getWeights(centersIndexes, points)
-    var cumulativeProbability = 0.0
-    val cumulativeProbabilities = Array(weights.size) {
-        cumulativeProbability += weights[it].toDouble() / points.size
-        cumulativeProbability
-    }
+    val weights = getWeights(centersIndexes, points).toMutableList()
 
     val selectedCenters = Array(k) {
-        val randomCumulativeProbability = random.nextDouble(cumulativeProbability)
-        var w = -1
-        do {
-            w++
-        } while (randomCumulativeProbability > cumulativeProbabilities[w])
-        val center = centersIndexes[w]
-        centersIndexes.removeAt(w)
-        cumulativeProbability -= weights[w].toDouble() / points.size
+        val centerIndex = selectedWeightedIndex(weights, random)
+        val center = centersIndexes[centerIndex]
+        centersIndexes.removeAt(centerIndex)
+        weights.removeAt(centerIndex)
         center
     }
 
     return selectedCenters
+}
+
+private fun selectedWeightedIndex(weights: List<Int>, random: Random): Int {
+    var totalCumulativeWeight = 0L
+    val cumulativeWeights = Array(weights.size) {
+        totalCumulativeWeight += weights[it]
+        totalCumulativeWeight
+    }
+    val randomCumulativeProbability = random.nextLong(totalCumulativeWeight)
+    var i = -1
+    do {
+        i++
+    } while (randomCumulativeProbability > cumulativeWeights[i])
+    return i
 }
 
 private fun getWeights(centerIndexes: List<Int>, points: Array<Point>): Array<Int> {

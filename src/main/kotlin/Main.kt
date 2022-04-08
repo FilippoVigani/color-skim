@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
             paletteSize = 8,
             resolution = 0.2f,
             algorithm = ColorSkim.Algorithm.LLoyd(initialPointsSelector  = { k, points ->
-                scalableKMeans(k, points, 5f)
+                scalableKMeans(k, points, 2f)
             })
         )
         val palette2 = ColorSkim.computeSchemeFromImage(
