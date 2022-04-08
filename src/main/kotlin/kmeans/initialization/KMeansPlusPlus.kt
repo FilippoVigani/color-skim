@@ -8,17 +8,14 @@ import kotlin.random.Random
 fun kmeansPlusPlus(k: Int, points: Array<Point>): Array<Int> {
     val random = Random(0)
     val centersIndexes = Array(k) { if (it == 0) random.nextInt(points.size) else -1 }
-    var centersCount = 1
-    while (centersCount < k){
+    for (c in 1 until k) {
         var cumulativeDistance = 0.0
         val cumulativeDistances = Array(points.size) { p ->
             var minDistance = PointDistance.POSITIVE_INFINITY
-            for(i in centersIndexes.indices){
-                if (centersIndexes[i] != -1){
-                    val distance = euclideanDistanceSquared(points[centersIndexes[i]], points[p])
-                    if (distance <= minDistance){
-                        minDistance = distance
-                    }
+            for (i in 0 until c) {
+                val distance = euclideanDistanceSquared(points[centersIndexes[i]], points[p])
+                if (distance <= minDistance) {
+                    minDistance = distance
                 }
             }
             cumulativeDistance += minDistance
@@ -29,7 +26,7 @@ fun kmeansPlusPlus(k: Int, points: Array<Point>): Array<Int> {
         do {
             p++
         } while (randomCumulativeDistance > cumulativeDistances[p])
-        centersIndexes[centersCount++] = p
+        centersIndexes[c] = p
     }
     return centersIndexes
 }
