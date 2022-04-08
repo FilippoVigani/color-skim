@@ -52,11 +52,11 @@ private fun selectedWeightedIndex(weights: List<Int>, random: Random): Int {
         totalCumulativeWeight += weights[it]
         totalCumulativeWeight
     }
-    val randomCumulativeProbability = random.nextLong(totalCumulativeWeight)
+    val randomCumulativeWeight = random.nextLong(totalCumulativeWeight)
     var i = -1
     do {
         i++
-    } while (randomCumulativeProbability > cumulativeWeights[i])
+    } while (randomCumulativeWeight > cumulativeWeights[i])
     return i
 }
 
