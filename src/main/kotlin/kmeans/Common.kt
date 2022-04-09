@@ -1,8 +1,6 @@
 package kmeans
 
 import kotlin.math.pow
-import kotlin.math.sqrt
-import kotlin.random.Random
 
 typealias Point = DoubleArray
 typealias PointDistance = Double
@@ -14,23 +12,6 @@ internal fun euclideanDistanceSquared(x: Point, y: Point): PointDistance {
     }
     return total
 }
-
-internal fun centroid(points: Collection<Point>): Point {
-    if (points.isEmpty()) {
-        throw IllegalArgumentException("Can't calculate centroid of empty set")
-    }
-    val centroid = points.first().copyOf()
-    points.drop(1).forEach { point ->
-        for (d in centroid.indices) {
-            centroid[d] += point[d]
-        }
-    }
-    for (d in centroid.indices) {
-        centroid[d] = centroid[d] / points.size
-    }
-    return centroid
-}
-
 
 internal fun addPointToCentroid(centroid: Point, point: Point, previousClusterSize: Int) {
     for (d in centroid.indices) {
