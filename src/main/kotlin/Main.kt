@@ -10,7 +10,7 @@ import java.awt.Color as AwtColor
 
 @OptIn(ExperimentalTime::class)
 fun main(args: Array<String>) {
-    val colorSkim = ColorSkim()
+    val colorSkim = ColorSkim(algorithm = ColorSkim.Algorithm.LLoyd())
 
     args.forEach { path ->
         val argFile = File(path)
@@ -18,16 +18,17 @@ fun main(args: Array<String>) {
             argFile.listFiles(FileFilter { it.isFile && !it.isHidden })!!.sortedBy { it.name }
         } else listOf(argFile)
         files.forEach { file ->
-            val palette = colorSkim.computeSchemeFromImage(
-                inputStream = FileInputStream(file),
-                paletteSize = 5,
-                maxResolution = 1000 * 1000,
-                colorSelection = ColorSkim.ColorSelection.Sampled
-            )
-            val paletteAwtColors = palette.map {
-                it.color.toAwtColor()
+            for (i in 1..10){
+                val palette = colorSkim.computeSchemeFromImage(
+                    inputStream = FileInputStream(file),
+                    paletteSize = i,
+                    maxResolution = 1000 * 1000,
+                    colorSelection = ColorSkim.ColorSelection.Average
+                )
+                val paletteAwtColors = palette.map {
+                    it.color.toAwtColor()
+                }
             }
-            println(palette)
         }
 
     }

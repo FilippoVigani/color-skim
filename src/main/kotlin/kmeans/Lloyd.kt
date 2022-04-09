@@ -53,17 +53,11 @@ internal fun lloyd(
                 }
             }
         } while (converging)
-        val clusters = List(k) { mutableListOf<Point>() }
-        for (p in points.indices) {
-            clusters[clustersIndexes[p]].add(points[p])
-        }
-        (0 until k).mapNotNull {
-            val centroid = centroids[it]
-            Cluster(
-                centroid = centroid,
-                points = clusters[it]
-            )
-        }.sortedByDescending { it.points.size }
+        KMeansResult(
+            points = points,
+            clustersIndexes = clustersIndexes,
+            centroids = centroids
+        )
     }
     println("Operation took ${timedValue.duration.inWholeMilliseconds} ms ($iterations iterations)")
     return timedValue.value

@@ -85,7 +85,7 @@ class ColorSkim(
             resolution = resolution,
             maxResolution = maxResolution
         )
-        val clusters = when (algorithm) {
+        val result = when (algorithm) {
             is Algorithm.LLoyd -> lloyd(
                 k = paletteSize,
                 points = colors,
@@ -124,8 +124,7 @@ class ColorSkim(
                 }
             )
         }
-        val totalPoints = clusters.sumOf { it.points.size }
-        return clusters
+        return result.clusters
             .map { cluster ->
                 val color = when (colorSelection) {
                     ColorSelection.Average -> cluster.centroid.toColor(colorType)
@@ -137,7 +136,7 @@ class ColorSkim(
 
                 PaletteColor(
                     color = color,
-                    prevalence = cluster.points.size.toDouble() / totalPoints
+                    prevalence = cluster.points.size.toDouble() / result.numberOfPoints
                 )
             }
     }

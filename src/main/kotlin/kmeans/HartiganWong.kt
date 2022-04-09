@@ -64,19 +64,11 @@ internal fun hartiganWong(
             }
             pointIndex = (pointIndex + 1) % points.size
         } while (pointIndex != lastConvergedPointIndex)
-        val clusters = List(k) { mutableListOf<Point>() }
-        for (p in points.indices) {
-            clusters[clustersIndexes[p]].add(points[p])
-        }
-        (0 until k).mapNotNull {
-            val centroid = centroids[it]
-            if (centroid != null) {
-                Cluster(
-                    centroid = centroid,
-                    points = clusters[it]
-                )
-            } else null
-        }.sortedByDescending { it.points.size }
+        KMeansResult(
+            points = points,
+            clustersIndexes = clustersIndexes,
+            centroids = centroids
+        )
     }
     println("Operation took ${timedValue.duration.inWholeMilliseconds} ms ($iterations iterations)")
     return timedValue.value
