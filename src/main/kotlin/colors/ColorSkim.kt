@@ -7,6 +7,7 @@ import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
 import dev.kdrag0n.colorkt.rgb.Srgb
 import dev.kdrag0n.colorkt.ucs.lab.Oklab
 import kmeans.*
+import kmeans.evaluation.estimateBestK
 import kmeans.hartiganWong
 import kmeans.initialization.kmeansPlusPlus
 import kmeans.initialization.randomPointsIndexes
@@ -50,9 +51,14 @@ class ColorSkim(
         Average, Sampled
     }
 
+    sealed class PaletteSize {
+        data class Fixed(val size: Int) : PaletteSize()
+        data class Auto(val range: IntRange) : PaletteSize()
+    }
+
     fun computeSchemeFromImage(
         inputStream: InputStream,
-        paletteSize: Int,
+        paletteSize: PaletteSize,
         resolution: Float = 1f,
         maxResolution: Int = Int.MAX_VALUE,
         colorSelection: ColorSelection = ColorSelection.Average
@@ -71,7 +77,7 @@ class ColorSkim(
 
     internal fun computeSchemeFromImage(
         inputStream: InputStream,
-        paletteSize: Int,
+        paletteSize: PaletteSize,
         maxResolution: Int,
         resolution: Float,
         colorType: KClass<out Color>,
@@ -85,45 +91,71 @@ class ColorSkim(
             resolution = resolution,
             maxResolution = maxResolution
         )
-        val result = when (algorithm) {
-            is Algorithm.LLoyd -> lloyd(
-                k = paletteSize,
-                points = colors,
-                selectIndexes = when (algorithm.initialPointsSelection) {
-                    Algorithm.LLoyd.InitialSelection.Random -> { k, points ->
-                        randomPointsIndexes(k = k, points = points, random = random)
-                    }
-                    Algorithm.LLoyd.InitialSelection.KmeansPlusPlus -> { k, points ->
-                        kmeansPlusPlus(k = k, points = points, random = random)
-                    }
-                    Algorithm.LLoyd.InitialSelection.ScalableKmeans -> { k, points ->
-                        scalableKMeans(k = k, points = points, l = 5f, random = random)
-                    }
-                }
+        val kRange = when (paletteSize) {
+            is PaletteSize.Auto -> IntRange(
+                start = (paletteSize.range.first - 1)
+                    .coerceAtLeast(1),
+                endInclusive = paletteSize.range.last + 1
             )
-            is Algorithm.MacQueen -> macQueen(
-                k = paletteSize,
-                points = colors,
-                selectIndexes = when (algorithm.initialPointsSelection) {
-                    Algorithm.MacQueen.InitialSelection.Random -> { k, points ->
-                        randomPointsIndexes(k = k, points = points, random = random)
-                    }
-                    Algorithm.MacQueen.InitialSelection.KmeansPlusPlus -> { k, points ->
-                        kmeansPlusPlus(k = k, points = points, random = random)
-                    }
-                    Algorithm.MacQueen.InitialSelection.ScalableKmeans -> { k, points ->
-                        scalableKMeans(k = k, points = points, l = 5f, random = random)
-                    }
-                }
-            )
-            Algorithm.HartiganWong -> hartiganWong(
-                k = paletteSize,
-                points = colors,
-                selectClustersIndexes = { k, points ->
-                    randomClusters(k, points, random)
-                }
-            )
+            is PaletteSize.Fixed -> paletteSize.size..paletteSize.size
         }
+        val results = kRange.map {
+            when (algorithm) {
+                is Algorithm.LLoyd -> lloyd(
+                    k = it,
+                    points = colors,
+                    selectIndexes = when (algorithm.initialPointsSelection) {
+                        Algorithm.LLoyd.InitialSelection.Random -> { k, points ->
+                            randomPointsIndexes(k = k, points = points, random = random)
+                        }
+                        Algorithm.LLoyd.InitialSelection.KmeansPlusPlus -> { k, points ->
+                            kmeansPlusPlus(k = k, points = points, random = random)
+                        }
+                        Algorithm.LLoyd.InitialSelection.ScalableKmeans -> { k, points ->
+                            scalableKMeans(k = k, points = points, l = 5f, random = random)
+                        }
+                    }
+                )
+                is Algorithm.MacQueen -> macQueen(
+                    k = it,
+                    points = colors,
+                    selectIndexes = when (algorithm.initialPointsSelection) {
+                        Algorithm.MacQueen.InitialSelection.Random -> { k, points ->
+                            randomPointsIndexes(k = k, points = points, random = random)
+                        }
+                        Algorithm.MacQueen.InitialSelection.KmeansPlusPlus -> { k, points ->
+                            kmeansPlusPlus(k = k, points = points, random = random)
+                        }
+                        Algorithm.MacQueen.InitialSelection.ScalableKmeans -> { k, points ->
+                            scalableKMeans(k = k, points = points, l = 5f, random = random)
+                        }
+                    }
+                )
+                Algorithm.HartiganWong -> hartiganWong(
+                    k = it,
+                    points = colors,
+                    selectClustersIndexes = { k, points ->
+                        randomClusters(k, points, random)
+                    }
+                )
+            }
+        }
+        val result = when (paletteSize) {
+            is PaletteSize.Fixed -> results.first()
+            is PaletteSize.Auto -> {
+                val minElbowVariance = results.minOf { it.elbowVariance }
+                val maxElbowVariance = results.maxOf { it.elbowVariance }
+                val normalizedMeanDistortions =
+                    results.map { (it.elbowVariance - minElbowVariance) / (maxElbowVariance - minElbowVariance) }
+                val bestK = estimateBestK(
+                    paletteSize.range.first,
+                    paletteSize.range.last,
+                    normalizedMeanDistortions.toTypedArray()
+                )
+                results[bestK]
+            }
+        }
+
         return result.clusters
             .map { cluster ->
                 val color = when (colorSelection) {
@@ -131,7 +163,6 @@ class ColorSkim(
                     ColorSelection.Sampled -> cluster.points
                         .minByOrNull { euclideanDistanceSquared(it, cluster.centroid) }!!
                         .toColor(colorType)
-
                 }
 
                 PaletteColor(
@@ -153,7 +184,8 @@ class ColorSkim(
         val actualResolution = resolution.pow(2)
         val bufferedImage = ImageIO.read(inputStream)
         val pixelCount =
-            ((bufferedImage.width * bufferedImage.height) * actualResolution).roundToInt().coerceAtMost(maxResolution)
+            ((bufferedImage.width * bufferedImage.height) * actualResolution).roundToInt()
+                .coerceAtMost(maxResolution)
         val colorArray = Array(pixelCount) { DoubleArray(3) }
         for (i in 0 until pixelCount) {
             val index = ((i.toFloat() / pixelCount) * (bufferedImage.width * bufferedImage.height)).roundToInt()

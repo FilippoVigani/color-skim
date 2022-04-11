@@ -18,17 +18,16 @@ fun main(args: Array<String>) {
             argFile.listFiles(FileFilter { it.isFile && !it.isHidden })!!.sortedBy { it.name }
         } else listOf(argFile)
         files.forEach { file ->
-            for (i in 1..10){
-                val palette = colorSkim.computeSchemeFromImage(
-                    inputStream = FileInputStream(file),
-                    paletteSize = i,
-                    maxResolution = 1000 * 1000,
-                    colorSelection = ColorSkim.ColorSelection.Average
-                )
-                val paletteAwtColors = palette.map {
-                    it.color.toAwtColor()
-                }
+            val palette = colorSkim.computeSchemeFromImage(
+                inputStream = FileInputStream(file),
+                paletteSize = ColorSkim.PaletteSize.Auto(3..15),
+                maxResolution = 100 * 100,
+                colorSelection = ColorSkim.ColorSelection.Sampled
+            )
+            val paletteAwtColors = palette.map {
+                it.color.toAwtColor()
             }
+            println(palette)
         }
 
     }
@@ -36,5 +35,5 @@ fun main(args: Array<String>) {
 
 private fun Color.toAwtColor(): AwtColor {
     val rgb = this.convert<Srgb>()
-    return AwtColor(rgb.r.toFloat(), rgb.g.toFloat(), rgb.b.toFloat())
+    return AwtColor(rgb.r.toFloat().coerceIn(0f, 1f), rgb.g.toFloat().coerceIn(0f, 1f), rgb.b.toFloat().coerceIn(0f, 1f))
 }
