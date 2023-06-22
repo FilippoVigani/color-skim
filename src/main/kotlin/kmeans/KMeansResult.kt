@@ -3,7 +3,7 @@ package kmeans
 import kmeans.evaluation.elbow
 import kmeans.evaluation.silhouette
 
-class KMeansResult(
+internal class KMeansResult(
     internal val points: Array<Point>,
     internal val clustersIndexes: Array<Int>,
     internal val centroids: Array<out Point?>
@@ -25,7 +25,7 @@ class KMeansResult(
 }
 
 
-class Cluster(
+internal class Cluster(
     val centroid: Point,
     val points: Collection<Point>
 )

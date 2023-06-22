@@ -5,7 +5,13 @@ import kmeans.euclideanDistanceSquared
 import kotlin.math.acos
 import kotlin.math.sqrt
 
-fun elbow(kMeansResult: KMeansResult): Double {
+/**
+ *
+ * [Elbow point discriminant method]((https://jwcn-eurasipjournals.springeropen.com/articles/10.1186/s13638-021-01910-w)) implementation,
+ * used to determine the optimal number of clusters.
+ *
+ */
+internal fun elbow(kMeansResult: KMeansResult): Double {
     var wcss = 0.0
     for (i in kMeansResult.points.indices) {
         val distance =
@@ -16,7 +22,7 @@ fun elbow(kMeansResult: KMeansResult): Double {
     return meanDistortion
 }
 
-fun estimateBestK(kmin: Int, kmax: Int, normalizedMeanDistortions: Array<Double>, empiricalValue: Double = 10.0): Int {
+internal fun estimateBestK(kmin: Int, kmax: Int, normalizedMeanDistortions: Array<Double>, empiricalValue: Double = 10.0): Int {
     var minAngle = Math.PI
     var kopt = 0
     val pl = Array(normalizedMeanDistortions.size) {

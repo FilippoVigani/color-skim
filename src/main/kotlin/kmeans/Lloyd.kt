@@ -1,9 +1,12 @@
 package kmeans
 
-import kmeans.initialization.kmeansPlusPlus
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+/**
+ * Lloyd's k-means clustering algorithm implementation.
+ *
+ */
 @OptIn(ExperimentalTime::class)
 internal fun lloyd(
     k: Int,

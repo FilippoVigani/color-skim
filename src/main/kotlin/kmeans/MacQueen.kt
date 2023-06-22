@@ -3,6 +3,10 @@ package kmeans
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
+/**
+ * MacQueen's k-means clustering algorithm implementation.
+ *
+ */
 @OptIn(ExperimentalTime::class)
 internal fun macQueen(
     k: Int,

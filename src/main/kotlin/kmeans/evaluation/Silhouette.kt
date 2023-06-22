@@ -5,7 +5,12 @@ import kmeans.PointDistance
 import kmeans.euclideanDistanceSquared
 import java.lang.Double.max
 
-fun silhouette(kMeansResult: KMeansResult): Double {
+/**
+ * [Silhouette points discriminant method](https://www.sciencedirect.com/science/article/pii/0377042787901257?via%3Dihub) implementation,
+ * used to determine the optimal number of clusters.
+ *
+ */
+internal fun silhouette(kMeansResult: KMeansResult): Double {
     val k = kMeansResult.centroids.size
     val points = kMeansResult.points
     var totalSi = 0.0

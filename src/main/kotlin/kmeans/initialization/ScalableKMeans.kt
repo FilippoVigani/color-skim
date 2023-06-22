@@ -7,7 +7,11 @@ import kotlin.math.ln
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-fun scalableKMeans(k: Int, points: Array<Point>, l: Float, random: Random = Random.Default): Array<Int> {
+/**
+ * [Scalable K-Means++](https://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf) implementation.
+ *
+ */
+internal fun scalableKMeans(k: Int, points: Array<Point>, l: Float, random: Random = Random.Default): Array<Int> {
     val centersIndexes = mutableListOf(random.nextInt(points.size))
     val phi = getTotalCost(points, centersIndexes.toTypedArray())
     var currentCost = phi

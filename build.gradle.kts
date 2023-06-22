@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     implementation("dev.kdrag0n:colorkt:1.0.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
     testImplementation(kotlin("test"))
 }
 

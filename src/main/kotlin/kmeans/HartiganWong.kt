@@ -4,7 +4,10 @@ import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
-
+/**
+ * [Hartigan-Wong k-means](https://www.jstor.org/stable/2346830) clustering algorithm implementation.
+ *
+ */
 @OptIn(ExperimentalTime::class)
 internal fun hartiganWong(
     k: Int,
@@ -74,7 +77,7 @@ internal fun hartiganWong(
     return timedValue.value
 }
 
-fun computeClustersSizesAndCentroids(
+internal fun computeClustersSizesAndCentroids(
     k: Int,
     points: Array<Point>,
     clusterIndexes: Array<Int>
@@ -103,11 +106,11 @@ fun computeClustersSizesAndCentroids(
 }
 
 
-fun randomClusters(k: Int, points: Array<Point>, random: Random = Random.Default): Array<Int> {
+internal fun randomClusters(k: Int, points: Array<Point>, random: Random = Random.Default): Array<Int> {
     return Array(points.size) { random.nextInt(k) }
 }
 
-fun costImprovement(
+internal fun costImprovement(
     point: Point,
     sourceCentroid: Point,
     sourceSize: Int,
