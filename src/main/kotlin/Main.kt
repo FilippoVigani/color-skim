@@ -3,6 +3,16 @@ import colors.PaletteColor
 import dev.kdrag0n.colorkt.Color
 import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
 import kotlinx.cli.*
+import java.io.File
+import java.io.FileFilter
+import java.io.FileInputStream
+import javax.imageio.ImageIO
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+import kotlin.math.min
+import kotlin.reflect.KClass
 import dev.kdrag0n.colorkt.rgb.LinearSrgb as ColorKtLinearSrgb
 import dev.kdrag0n.colorkt.rgb.Srgb as ColorKtSrgb
 import dev.kdrag0n.colorkt.tristimulus.CieXyz as ColorKtCieXyz
@@ -11,18 +21,6 @@ import dev.kdrag0n.colorkt.ucs.lab.CieLab as ColorKtCieLab
 import dev.kdrag0n.colorkt.ucs.lab.Oklab as ColorKtOklab
 import dev.kdrag0n.colorkt.ucs.lch.CieLch as ColorKtCieLch
 import dev.kdrag0n.colorkt.ucs.lch.Oklch as ColorKtOklch
-import java.io.File
-import java.io.FileFilter
-import java.io.FileInputStream
-import kotlin.reflect.KClass
-import java.util.Collections.min
-import javax.imageio.ImageIO
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import kotlin.math.min
-import kotlin.time.ExperimentalTime
 import java.awt.Color as AwtColor
 
 fun main(args: Array<String>) {
@@ -39,7 +37,7 @@ fun main(args: Array<String>) {
         ArgType.String,
         shortName = "o",
         fullName = "output",
-        description = "Creates a visual representation of the output in the specified output file"
+        description = "Creates a visual representation of the output in the specified output folder"
     )
 
     val colorSpace by parser.option(
@@ -54,7 +52,7 @@ fun main(args: Array<String>) {
         shortName = "a",
         fullName = "algorithm",
         description = "Algorithm used to compute the matching colors"
-    ).default(ArgAlgorithm.Lloyd)
+    ).default(ArgAlgorithm.MacQueen)
 
     val paletteSizeArg by parser.option(
         ArgType.Int,
@@ -81,8 +79,8 @@ fun main(args: Array<String>) {
         ArgType.Int,
         shortName = "l",
         fullName = "limit",
-        description = "Upper limit on the number of pixels for the computation. If the number of pixels times the resolution is lower than this number, this has no effect"
-    ).default(100 * 100)
+        description = "Upper limit on the number of pixels for the computation. If the number of pixels times the resolution is lower than this number, this has no effect. Highly recommended for large images."
+    ).default(Int.MAX_VALUE)
 
     val debug by parser.option(
         ArgType.Boolean,
@@ -90,6 +88,7 @@ fun main(args: Array<String>) {
         fullName = "debug",
         description = "Print debug information such as execution time and algorithm specifics"
     ).default(false)
+    //TODO: Use debug variable to handle logging
 
     parser.parse(args)
 
@@ -119,13 +118,11 @@ fun main(args: Array<String>) {
             resolution = resolution.toFloat(),
             maxResolution = limit,
             colorSelection = selection,
-
-            )
-            val paletteAwtColors = palette.map {
-                it.color.toAwtColor()
-            }
-            println(palette)
+        )
+        if (output != null){
+            exportSVG(file, palette, File("./$output/${file.nameWithoutExtension}.svg"))
         }
+    }
 
 }
 
@@ -133,6 +130,7 @@ private enum class ArgAlgorithm {
     Lloyd, MacQueen, HartiganWong
 }
 
+@Suppress("unused")
 private enum class ArgColorSpace(val kClass: KClass<out Color>) {
     Oklab(ColorKtOklab::class),
     CieLab(ColorKtCieLab::class),
@@ -144,6 +142,7 @@ private enum class ArgColorSpace(val kClass: KClass<out Color>) {
     CieLch(ColorKtCieLch::class),
 }
 
+//TODO: Refactor svg exporter
 private fun exportSVG(inputFile: File, palette: List<PaletteColor>, outputFile: File) {
     val documentBuilderFactory = DocumentBuilderFactory.newInstance()
     val builder = documentBuilderFactory.newDocumentBuilder()
@@ -176,7 +175,7 @@ private fun exportSVG(inputFile: File, palette: List<PaletteColor>, outputFile: 
                         setAttribute("y", "${imageHeight + padding * 2}")
                         setAttribute("width", "$colorWidth")
                         setAttribute("height", "$colorHeight")
-                        setAttribute("fill", paletteColor.color.convert<Srgb>().toHex())
+                        setAttribute("fill", paletteColor.color.convert<ColorKtSrgb>().toHex())
                     }
                 )
             }
