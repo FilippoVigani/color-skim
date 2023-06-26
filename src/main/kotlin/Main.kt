@@ -3,9 +3,11 @@ import colors.PaletteColor
 import dev.kdrag0n.colorkt.Color
 import dev.kdrag0n.colorkt.conversion.ConversionGraph.convert
 import kotlinx.cli.*
+import logging.LogConsoleHandler
 import java.io.File
 import java.io.FileFilter
 import java.io.FileInputStream
+import java.util.logging.*
 import javax.imageio.ImageIO
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
@@ -86,11 +88,18 @@ fun main(args: Array<String>) {
         ArgType.Boolean,
         shortName = "d",
         fullName = "debug",
-        description = "Print debug information such as execution time and algorithm specifics"
+        description = "Print debug information such as execution time"
     ).default(false)
-    //TODO: Use debug variable to handle logging
+
+    val verbose by parser.option(
+        ArgType.Boolean,
+        shortName = "v",
+        fullName = "verbose",
+        description = "Print verbose debug information such as information about every iteration"
+    ).default(false)
 
     parser.parse(args)
+    val logger = setupLogger(debug, verbose)
 
     val colorSkim = ColorSkim(
         algorithm = when (algorithm) {
@@ -109,9 +118,11 @@ fun main(args: Array<String>) {
 
     val argFile = File(input)
     val files = if (argFile.isDirectory) {
+        logger.finer("$argFile is a directory, will use every file in it")
         argFile.listFiles(FileFilter { it.isFile && !it.isHidden })!!.sortedBy { it.name }
     } else listOf(argFile)
     files.forEach { file ->
+        logger.fine("Analysing ${file.path}")
         val palette = colorSkim.computeSchemeFromImage(
             inputStream = FileInputStream(file),
             paletteSize = paletteSize,
@@ -119,11 +130,30 @@ fun main(args: Array<String>) {
             maxResolution = limit,
             colorSelection = selection,
         )
-        if (output != null){
+        if (output != null) {
             exportSVG(file, palette, File("./$output/${file.nameWithoutExtension}.svg"))
         }
     }
 
+}
+
+private fun setupLogger(debug: Boolean, verbose: Boolean): Logger {
+    LogManager.getLogManager()
+        .readConfiguration(ColorSkim::class.java.classLoader.getResourceAsStream("logging.properties"))
+
+    return Logger.getLogger(ColorSkim::class.qualifiedName).apply {
+        useParentHandlers = false
+        val handler = LogConsoleHandler()
+        addHandler(handler)
+        if (debug) {
+            level = Level.FINE
+            handler.level = Level.FINE
+        }
+        if (verbose) {
+            level = Level.ALL
+            handler.level = Level.ALL
+        }
+    }
 }
 
 private enum class ArgAlgorithm {
